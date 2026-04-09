@@ -6,10 +6,9 @@ on:
 
 jobs:
   release:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest] # Aquí es donde GitHub usa una computadora con Linux
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Check out git repository
         uses: actions/checkout@v4
@@ -25,11 +24,16 @@ jobs:
 
       - name: Build Code
         run: |
-          npx vite build
-          npx vite build --outDir dist-electron --main
-          ls -R dist-electron  # Esto nos dirá en la consola si el archivo existe
-
+          # Generamos la carpeta dist-electron antes de empaquetar
+          npm run build
+          
       - name: Package App for Linux
         run: npx electron-builder --linux AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Taller-Mecanico-Linux
+          path: release/*.AppImage
