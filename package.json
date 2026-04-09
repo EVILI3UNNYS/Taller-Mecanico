@@ -16,9 +16,12 @@
     "@capacitor/filesystem": "latest",
     "@capacitor/share": "latest",
     "jspdf": "latest",
+    "jspdf-autotable": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "lucide-react": "^0.344.0"
+    "lucide-react": "^0.344.0",
+    "clsx": "latest",
+    "tailwind-merge": "latest"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
