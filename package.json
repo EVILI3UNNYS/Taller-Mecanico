@@ -8,7 +8,7 @@
   "author": "EVILI3UNNYS",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --outDir dist-electron --main",
+    "build": "vite build && vite build --outDir dist-electron",
     "dist": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
