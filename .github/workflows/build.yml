@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # Aquí es donde GitHub usa una computadora con Linux
-
     steps:
       - name: Check out git repository
         uses: actions/checkout@v4
@@ -19,11 +18,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build Electron App
+      - name: Build Code
+        run: |
+          npx vite build
+          npx vite build --outDir dist-electron --main
+          ls -R dist-electron  # Esto nos dirá en la consola si el archivo existe
+
+      - name: Package App for Linux
         run: npx electron-builder --linux AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

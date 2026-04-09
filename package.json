@@ -3,13 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "main": "dist-electron/main.js",
-  "description": "Programa para registro de talleres mecánicos",
+  "description": "Programa para registro de talleres mecanicos",
   "author": "EVILI3UNNYS",
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --outDir dist-electron --main",
-    "preview": "vite preview",
-    "postinstall": "electron-builder install-app-deps"
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -17,8 +16,6 @@
     "lucide-react": "^0.344.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.56",
-    "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "electron": "^30.5.1",
@@ -33,17 +30,20 @@
     "appId": "com.taller.educar",
     "productName": "Taller Educar",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "public"
     },
     "files": [
-      "dist",
-      "dist-electron"
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
     ],
     "linux": {
       "target": [
         "AppImage"
       ],
       "category": "Utility"
-    }
+    },
+    "asar": true
   }
 }
