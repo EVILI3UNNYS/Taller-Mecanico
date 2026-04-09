@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --outDir dist-electron --main",
-    "preview": "vite preview"
+    "dist": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
     "react": "^18.2.0",
