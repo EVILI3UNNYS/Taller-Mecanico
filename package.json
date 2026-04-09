@@ -2,6 +2,7 @@
   "name": "taller-educar",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "main": "dist-electron/main.js",
   "description": "Programa para registro de talleres mecanicos",
   "author": "EVILI3UNNYS",
@@ -11,6 +12,8 @@
     "dist": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/filesystem": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "lucide-react": "^0.344.0"
