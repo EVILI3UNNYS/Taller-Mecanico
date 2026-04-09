@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* Fondo gris oscuro suave, texto gris claro (no blanco) */
+  @apply bg-slate-900 text-slate-300 antialiased;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+button {
+  @apply transition-all duration-300 active:scale-95;
+}
