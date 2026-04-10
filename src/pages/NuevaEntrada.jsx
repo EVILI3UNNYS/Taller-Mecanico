@@ -10,7 +10,9 @@ const NuevaEntrada = () => {
   const [formData, setFormData] = useState({ 
     marca: '', modelo: '', año: '', km: '',
     placa: '', noSerie: '', cliente: '', noEconomico: '', 
-    reporte: '', reporteTaller: '', refacciones: [],
+    reporte: '', reporteTaller: '', 
+    comentarios: '', // <--- 1. Agregado al estado inicial
+    refacciones: [],
     incluirIva: true 
   });
   
@@ -40,13 +42,16 @@ const NuevaEntrada = () => {
     setFormData({
       marca: '', modelo: '', año: '', km: '',
       placa: '', noSerie: '', cliente: '', noEconomico: '', 
-      reporte: '', reporteTaller: '', refacciones: [],
+      reporte: '', reporteTaller: '', 
+      comentarios: '', // <--- 2. Limpiar también comentarios
+      refacciones: [],
       incluirIva: true 
     });
     setPhotos([]); 
   };
 
   const crearArchivoPDF = async () => {
+    // Aquí mandamos el formData completo (que ya lleva los comentarios)
     const base64PDF = await generarPDFReporte(formData, photos);
     const byteCharacters = atob(base64PDF);
     const byteNumbers = new Array(byteCharacters.length);
@@ -87,6 +92,21 @@ const NuevaEntrada = () => {
       <div className="space-y-6">
         
         <VehicleForm formData={formData} setFormData={setFormData} />
+        
+        {/* --- 3. NUEVO CUADRO DE COMENTARIOS --- */}
+        <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl space-y-3">
+          <label className="text-indigo-300 text-xs uppercase tracking-widest font-bold ml-1">
+            📝 Observaciones Generales
+          </label>
+          <textarea
+            value={formData.comentarios}
+            onChange={(e) => setFormData({...formData, comentarios: e.target.value})}
+            placeholder="Anota detalles adicionales, estado visual del vehículo o peticiones del cliente..."
+            rows="4"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
+          />
+        </div>
+
         <RefaccionesForm formData={formData} setFormData={setFormData} />
         
         <PhotoCapture 
@@ -116,7 +136,7 @@ const NuevaEntrada = () => {
             disabled={isSaving} 
             className="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl transition-colors font-bold"
           >
-            📤 Compartir
+            {isSaving ? 'Generando...' : '📤 Compartir'}
           </button>
         </div>
       </div>

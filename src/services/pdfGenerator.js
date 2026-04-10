@@ -4,6 +4,7 @@ import autoTable from 'jspdf-autotable';
 export const generarPDFReporte = async (formData, photos) => {
   const doc = new jsPDF();
   const fechaActual = new Date().toLocaleDateString('es-MX');
+  const pageWidth = doc.internal.pageSize.width;
 
   // --- ENCABEZADO ---
   doc.setFillColor(30, 64, 175);
@@ -40,7 +41,21 @@ export const generarPDFReporte = async (formData, photos) => {
 
   // --- REPORTE DEL USUARIO ---
   doc.setFont("helvetica", "bold"); doc.text("REPORTE DE USUARIO:", 12, 93);
-  doc.setFont("helvetica", "normal"); doc.text(formData.reporte || '', 12, 98, { maxWidth: 180 });
+  doc.setFont("helvetica", "normal"); doc.text(formData.reporte || 'Sin reporte', 12, 98, { maxWidth: 180 });
+
+  // --- NUEVA SECCIÓN: OBSERVACIONES Y COMENTARIOS ---
+  let nextSectionY = 112; // Posición base después del reporte de usuario
+  
+  if (formData.comentarios) {
+    doc.setFont("helvetica", "bold"); 
+    doc.text("OBSERVACIONES GENERALES:", 12, 108);
+    doc.setFont("helvetica", "normal");
+    const splitComments = doc.splitTextToSize(formData.comentarios, 180);
+    doc.text(splitComments, 12, 113);
+    
+    // Calculamos espacio dinámico para que la tabla no se encime
+    nextSectionY = 113 + (splitComments.length * 5) + 10;
+  }
 
   // --- TABLA DE REFACCIONES ---
   const tableData = formData.refacciones.map(item => [
@@ -63,7 +78,7 @@ export const generarPDFReporte = async (formData, photos) => {
   tableData.push([{ content: '', colSpan: 2, styles: { fillColor: [255, 255, 255] } }, { content: 'TOTAL', styles: { fontStyle: 'bold', textColor: [255, 255, 255], fillColor: [30, 64, 175] } }, { content: `$${total.toFixed(2)}`, styles: { fontStyle: 'bold', textColor: [255, 255, 255], fillColor: [30, 64, 175] } }]);
 
   autoTable(doc, {
-    startY: 110,
+    startY: nextSectionY, // Usamos la posición dinámica
     head: [['CANTIDAD', 'DESCRIPCION', 'MONTO', 'TOTAL']],
     body: tableData,
     theme: 'grid',
@@ -73,33 +88,35 @@ export const generarPDFReporte = async (formData, photos) => {
   });
 
   // --- EVIDENCIA FOTOGRÁFICA ---
-  // Añadimos una validación para evitar errores si no hay fotos
   if (photos && photos.length > 0) {
     doc.addPage();
     doc.setFillColor(240, 240, 240);
     doc.rect(10, 10, 190, 8, 'F');
+    doc.setFont("helvetica", "bold");
     doc.text("EVIDENCIA FOTOGRÁFICA", 105, 15, { align: "center" });
 
     let y = 30;
     let xPos = 15;
     
     photos.forEach((photo, i) => {
-      // Bajar a la siguiente fila
       if (i > 0 && i % 3 === 0) { 
         xPos = 15; 
         y += 65; 
       }
-      // Nueva página si se acaba el espacio
       if (y > 230) { 
         doc.addPage(); 
         y = 30; 
         xPos = 15; 
       }
 
-      doc.addImage(`data:image/jpeg;base64,${photo.base64}`, 'JPEG', xPos, y, 50, 50);
-      doc.setFontSize(7);
-      const desc = photo.descripcion || `FOTO ${i+1}`;
-      doc.text(desc.toUpperCase(), xPos + 25, y + 55, { align: "center", maxWidth: 50 });
+      try {
+        doc.addImage(`data:image/jpeg;base64,${photo.base64}`, 'JPEG', xPos, y, 50, 50);
+        doc.setFontSize(7);
+        const desc = photo.descripcion || `FOTO ${i+1}`;
+        doc.text(desc.toUpperCase(), xPos + 25, y + 55, { align: "center", maxWidth: 50 });
+      } catch (e) {
+        console.error("Error al añadir imagen al PDF", e);
+      }
       
       xPos += 65;
     });
