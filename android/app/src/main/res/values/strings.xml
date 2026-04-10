@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Taller Educar</string>
+    <string name="title_activity_main">Taller Educar</string>
+    <string name="package_name">com.taller.educar</string>
+    <string name="custom_url_scheme">com.taller.educar</string>
+</resources>

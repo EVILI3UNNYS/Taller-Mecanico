@@ -12,18 +12,21 @@
     "dist": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
     "@capacitor/core": "latest",
     "@capacitor/filesystem": "latest",
+    "@capacitor/ios": "^6.2.1",
     "@capacitor/share": "latest",
+    "clsx": "latest",
     "jspdf": "latest",
     "jspdf-autotable": "latest",
+    "lucide-react": "^0.344.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "lucide-react": "^0.344.0",
-    "clsx": "latest",
     "tailwind-merge": "latest"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "electron": "^30.5.1",
