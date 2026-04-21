@@ -4,7 +4,6 @@ import autoTable from 'jspdf-autotable';
 export const generarPDFReporte = async (formData, photos) => {
   const doc = new jsPDF();
   const fechaActual = new Date().toLocaleDateString('es-MX');
-  const pageWidth = doc.internal.pageSize.width;
 
   // --- ENCABEZADO ---
   doc.setFillColor(30, 64, 175);

@@ -3,8 +3,9 @@ import VehicleForm from '../components/forms/VehicleForm';
 import RefaccionesForm from '../components/forms/RefaccionesForm';
 import PhotoCapture from '../components/camera/PhotoCapture';
 import { useCamera } from '../hooks/useCamera';
-import { useFileSystem } from '../hooks/useFileSystem';
 import { generarPDFReporte } from '../services/pdfGenerator';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const NuevaEntrada = () => {
   const [formData, setFormData] = useState({ 
@@ -19,7 +20,6 @@ const NuevaEntrada = () => {
   const [photos, setPhotos] = useState([]); 
   const [isSaving, setIsSaving] = useState(false);
   const { takePhoto } = useCamera();
-  const { guardarExpedienteLocal } = useFileSystem();
 
   const handleAddPhoto = async () => {
     const base64 = await takePhoto(); 
@@ -52,16 +52,9 @@ const NuevaEntrada = () => {
 
   const crearArchivoPDF = async () => {
     const base64PDF = await generarPDFReporte(formData, photos);
-    const byteCharacters = atob(base64PDF);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/pdf' });
     const fecha = new Date().toISOString().split('T')[0];
     const fileName = `Reporte_${formData.placa}_${fecha}.pdf`;
-    return new File([blob], fileName, { type: 'application/pdf' });
+    return { base64: base64PDF, fileName };
   };
 
   const handleAction = async (tipo) => {
@@ -70,21 +63,29 @@ const NuevaEntrada = () => {
     }
     setIsSaving(true);
     try {
-      const file = await crearArchivoPDF();
+      const { base64, fileName } = await crearArchivoPDF();
+      
+      // Write the PDF to the device's filesystem (Documents directory)
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Documents,
+      });
+      
       if (tipo === 'share') {
-        if (navigator.share) {
-          await navigator.share({ files: [file], title: 'Reporte' });
-        } else {
-          alert("La función de compartir no está disponible en este navegador.");
-        }
+        // Use Capacitor Share plugin to share the file natively
+        await Share.share({
+          title: 'Reporte de Taller Educar',
+          files: [result.uri],  // Share the saved file's URI
+        });
       } else {
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = file.name; 
-        a.click();
+        // For "download", the file is saved to Documents. Notify the user.
+        alert(`Archivo descargado y guardado en: ${result.uri}`);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      alert('Error al procesar el archivo: ' + e.message);
+    }
     setIsSaving(false);
   };
 
