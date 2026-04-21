@@ -3,11 +3,8 @@ import VehicleForm from '../components/forms/VehicleForm';
 import RefaccionesForm from '../components/forms/RefaccionesForm';
 import PhotoCapture from '../components/camera/PhotoCapture';
 import { useCamera } from '../hooks/useCamera';
+import { useFileSystem } from '../hooks/useFileSystem';
 import { generarPDFReporte } from '../services/pdfGenerator';
-
-// IMPORTACIONES NATIVAS DE CAPACITOR
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 
 const NuevaEntrada = () => {
   const [formData, setFormData] = useState({ 
@@ -22,6 +19,7 @@ const NuevaEntrada = () => {
   const [photos, setPhotos] = useState([]); 
   const [isSaving, setIsSaving] = useState(false);
   const { takePhoto } = useCamera();
+  const { guardarExpedienteLocal } = useFileSystem();
 
   const handleAddPhoto = async () => {
     const base64 = await takePhoto(); 
@@ -52,48 +50,42 @@ const NuevaEntrada = () => {
     setPhotos([]); 
   };
 
+  const crearArchivoPDF = async () => {
+    const base64PDF = await generarPDFReporte(formData, photos);
+    const byteCharacters = atob(base64PDF);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const fecha = new Date().toISOString().split('T')[0];
+    const fileName = `Reporte_${formData.placa}_${fecha}.pdf`;
+    return new File([blob], fileName, { type: 'application/pdf' });
+  };
+
   const handleAction = async (tipo) => {
-    // Validaciones básicas
     if (!formData.placa || !formData.noSerie || !formData.cliente || !formData.reporte) {
-      return alert("Completa los campos obligatorios (Placa, Serie, Cliente y Reporte) *");
+      return alert("Completa los campos obligatorios *");
     }
-
     setIsSaving(true);
-
     try {
-      // 1. Generar el PDF en formato Base64
-      const base64PDF = await generarPDFReporte(formData, photos);
-      const fecha = new Date().toISOString().split('T')[0];
-      const fileName = `Reporte_${formData.placa}_${fecha}.pdf`;
-
-      // 2. Guardar el archivo de forma nativa en el dispositivo
-      // Esto es necesario tanto para descargar como para compartir
-      const result = await Filesystem.writeFile({
-        path: fileName,
-        data: base64PDF,
-        directory: Directory.Documents,
-        recursive: true
-      });
-
+      const file = await crearArchivoPDF();
       if (tipo === 'share') {
-        // 3. Compartir usando el menú nativo de Android/iOS
-        await Share.share({
-          title: 'Reporte de Servicio EDU-CAR',
-          text: `Adjunto reporte de unidad: ${formData.marca} ${formData.modelo} - Placas: ${formData.placa}`,
-          url: result.uri, // Dirección interna del archivo guardado
-          dialogTitle: 'Compartir reporte con...',
-        });
+        if (navigator.share) {
+          await navigator.share({ files: [file], title: 'Reporte' });
+        } else {
+          alert("La función de compartir no está disponible en este navegador.");
+        }
       } else {
-        // Opción descargar: En móvil, avisamos que ya está en Documentos
-        alert(`¡Éxito! El archivo se guardó en tu carpeta de Documentos como: ${fileName}`);
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = file.name; 
+        a.click();
       }
-
-    } catch (error) {
-      console.error("Error en la operación nativa:", error);
-      alert("Hubo un problema al procesar el archivo. Verifica los permisos de almacenamiento.");
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (e) { console.error(e); }
+    setIsSaving(false);
   };
 
   return (
@@ -107,7 +99,7 @@ const NuevaEntrada = () => {
         
         <VehicleForm formData={formData} setFormData={setFormData} />
         
-        {/* CUADRO DE COMENTARIOS */}
+        {/* SECCIÓN DE COMENTARIOS */}
         <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl space-y-3">
           <label className="text-indigo-300 text-xs uppercase tracking-widest font-bold ml-1">
             📝 Observaciones Generales
@@ -141,14 +133,14 @@ const NuevaEntrada = () => {
           <button 
             onClick={() => handleAction('download')} 
             disabled={isSaving} 
-            className="bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-2xl transition-colors font-bold flex items-center justify-center gap-2"
+            className="bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-2xl transition-colors font-bold"
           >
-            {isSaving ? 'Generando...' : '⬇️ Guardar'}
+            {isSaving ? 'Generando...' : '⬇️ Descargar'}
           </button>
           <button 
             onClick={() => handleAction('share')} 
             disabled={isSaving} 
-            className="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl transition-colors font-bold flex items-center justify-center gap-2"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl transition-colors font-bold"
           >
             {isSaving ? 'Generando...' : '📤 Compartir'}
           </button>

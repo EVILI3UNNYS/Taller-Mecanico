@@ -14,9 +14,7 @@
   "dependencies": {
     "@capacitor/android": "^6.2.1",
     "@capacitor/core": "latest",
-    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^6.2.1",
-    "@capacitor/share": "^8.0.1",
     "clsx": "latest",
     "jspdf": "latest",
     "jspdf-autotable": "latest",
