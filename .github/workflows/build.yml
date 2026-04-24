@@ -1,4 +1,4 @@
-name: Build Multiplatform App
+name: Build Electron App
 on:
   push:
     branches:
@@ -7,56 +7,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Check out git repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install Dependencies
+        run: npm install
 
-      - name: Build Web Assets
+      - name: Build Web App
         run: npm run build
 
-      # --- SECCIÓN LINUX ---
-      - name: Package App for Linux
+      - name: Build Electron Dist (Linux AppImage)
         run: npx electron-builder --linux AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- SECCIÓN ANDROID ---
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Android project
-        run: |
-          npx cap sync android
-
-      - name: Build Android APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      # --- SUBIR RESULTADOS ---
-      - name: Upload Linux Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Taller-Mecanico-Linux
+          name: Electron-AppImage
           path: release/*.AppImage
-
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Taller-Mecanico-Android
-          path: android/app/build/outputs/apk/debug/app-debug.apk
