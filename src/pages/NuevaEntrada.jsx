@@ -4,8 +4,6 @@ import RefaccionesForm from '../components/forms/RefaccionesForm';
 import PhotoCapture from '../components/camera/PhotoCapture';
 import { useCamera } from '../hooks/useCamera';
 import { generarPDFReporte } from '../services/pdfGenerator';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 
 const NuevaEntrada = () => {
   const [formData, setFormData] = useState({ 
@@ -50,100 +48,96 @@ const NuevaEntrada = () => {
     setPhotos([]); 
   };
 
-  const crearArchivoPDF = async () => {
-    const base64PDF = await generarPDFReporte(formData, photos);
-    const fecha = new Date().toISOString().split('T')[0];
-    const fileName = `Reporte_${formData.placa}_${fecha}.pdf`;
-    return { base64: base64PDF, fileName };
-  };
-
   const handleAction = async (tipo) => {
-    if (!formData.placa || !formData.noSerie || !formData.cliente || !formData.reporte) {
-      return alert("Completa los campos obligatorios *");
+    if (!formData.placa || !formData.cliente) {
+      return alert("Por favor escribe al menos el nombre del Cliente y las Placas.");
     }
+    
     setIsSaving(true);
     try {
-      const { base64, fileName } = await crearArchivoPDF();
-      
-      // Write the PDF to the device's filesystem (Documents directory)
-      const result = await Filesystem.writeFile({
-        path: fileName,
-        data: base64,
-        directory: Directory.Documents,
-      });
-      
-      if (tipo === 'share') {
-        // Use Capacitor Share plugin to share the file natively
-        await Share.share({
-          title: 'Reporte de Taller Educar',
-          files: [result.uri],  // Share the saved file's URI
+      const base64 = await generarPDFReporte(formData, photos);
+      const fileName = `Reporte_${formData.placa || 'Sin_Placa'}.pdf`;
+
+      // --- LÓGICA PARA NAVEGADOR (PC) ---
+      if (!window.Capacitor && !window.electronAPI) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        if (tipo === 'share') alert("En PC usa 'Descargar' para compartir el archivo manualmente.");
+      } 
+      // --- LÓGICA PARA ANDROID (CAPACITOR) ---
+      else if (window.Capacitor) {
+        // Importación dinámica para evitar errores si no está instalada la librería
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Documents,
         });
-      } else {
-        // For "download", the file is saved to Documents. Notify the user.
-        alert(`Archivo descargado y guardado en: ${result.uri}`);
+
+        if (tipo === 'share') {
+          await Share.share({ title: 'Reporte Educar', files: [result.uri] });
+        } else {
+          alert("Guardado en Documentos");
+        }
       }
     } catch (e) {
       console.error(e);
-      alert('Error al procesar el archivo: ' + e.message);
+      alert('Error: ' + e.message);
     }
     setIsSaving(false);
   };
 
   return (
-    <div className="min-h-screen pb-20 max-w-xl mx-auto px-4">
+    <div className="min-h-screen pb-20 max-w-xl mx-auto px-4 text-slate-200">
       <div className="py-8 text-center">
-        <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Taller Educar</h1>
-        <p className="text-indigo-400/80 text-xs uppercase tracking-widest font-semibold mt-1">Registro de Unidad</p>
+        <h1 className="text-3xl font-bold text-slate-100">EDU-CAR</h1>
+        <p className="text-indigo-400 text-xs uppercase tracking-widest">Sistema de Reportes</p>
       </div>
 
       <div className="space-y-6">
-        
         <VehicleForm formData={formData} setFormData={setFormData} />
         
-        {/* SECCIÓN DE COMENTARIOS */}
-        <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl space-y-3">
-          <label className="text-indigo-300 text-xs uppercase tracking-widest font-bold ml-1">
-            📝 Observaciones Generales
-          </label>
+        <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl">
+          <label className="text-indigo-300 text-xs font-bold uppercase block mb-2">📝 Observaciones</label>
           <textarea
             value={formData.comentarios}
             onChange={(e) => setFormData({...formData, comentarios: e.target.value})}
-            placeholder="Anota detalles adicionales, estado visual del vehículo o peticiones del cliente..."
-            rows="4"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
+            placeholder="Detalles adicionales..."
+            className="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-sm resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
+            rows="3"
           />
         </div>
 
         <RefaccionesForm formData={formData} setFormData={setFormData} />
+        <PhotoCapture photos={photos} onTakePhoto={handleAddPhoto} onUpdateDescription={handleUpdatePhotoDesc} onRemovePhoto={handleRemovePhoto} />
         
-        <PhotoCapture 
-          photos={photos} 
-          onTakePhoto={handleAddPhoto} 
-          onUpdateDescription={handleUpdatePhotoDesc}
-          onRemovePhoto={handleRemovePhoto}
-        />
-        
-        <button 
-          onClick={handleLimpiar}
-          className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-2xl transition-colors text-sm font-bold uppercase tracking-widest border border-slate-700 mt-4"
-        >
-          🗑️ Limpiar Formulario
+        <button onClick={handleLimpiar} className="w-full bg-slate-800 text-slate-400 py-3 rounded-2xl text-xs font-bold uppercase border border-slate-700">
+          Limpiar Todo
         </button>
 
         <div className="grid grid-cols-2 gap-4">
-          <button 
-            onClick={() => handleAction('download')} 
-            disabled={isSaving} 
-            className="bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-2xl transition-colors font-bold"
-          >
-            {isSaving ? 'Generando...' : '⬇️ Descargar'}
+          <button onClick={() => handleAction('download')} disabled={isSaving} className="bg-slate-700 py-4 rounded-2xl font-bold">
+            {isSaving ? '...' : '⬇️ Descargar'}
           </button>
-          <button 
-            onClick={() => handleAction('share')} 
-            disabled={isSaving} 
-            className="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl transition-colors font-bold"
-          >
-            {isSaving ? 'Generando...' : '📤 Compartir'}
+          <button onClick={() => handleAction('share')} disabled={isSaving} className="bg-indigo-600 py-4 rounded-2xl font-bold">
+            {isSaving ? '...' : '📤 Compartir'}
           </button>
         </div>
       </div>

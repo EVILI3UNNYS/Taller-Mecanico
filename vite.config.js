@@ -4,6 +4,11 @@ import electron from 'vite-plugin-electron/simple'
 
 export default defineConfig({
   base: './', // <-- ¡Esta es la línea mágica que evita la pantalla blanca!
+  build: {
+    rollupOptions: {
+      external: ['@capacitor/core', '@capacitor/filesystem', '@capacitor/share']
+    }
+  },
   plugins: [
     react(),
     electron({

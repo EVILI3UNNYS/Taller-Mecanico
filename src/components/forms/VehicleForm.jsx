@@ -15,7 +15,7 @@ const VehicleForm = ({ formData, setFormData }) => {
         <Input label="Kilometraje" value={formData.km} onChange={v => up('km', v)} />
         <Input label="Placa" required uppercase value={formData.placa} onChange={v => up('placa', v)} />
         {/* Límite de 8 caracteres aquí */}
-        <Input label="No. Serie" required uppercase maxLength={18} value={formData.noSerie} onChange={v => up('noSerie', v)} />
+        <Input label="No. Serie" required uppercase maxLength={20} value={formData.noSerie} onChange={v => up('noSerie', v)} />
       </div>
       
       <Input label="No. Económico (Opcional)" value={formData.noEconomico} onChange={v => up('noEconomico', v)} uppercase />
