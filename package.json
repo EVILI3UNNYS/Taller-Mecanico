@@ -12,11 +12,6 @@
     "dist": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.1",
-    "@capacitor/core": "^8.3.1",
-    "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/ios": "^8.3.1",
-    "@capacitor/share": "^8.0.1",
     "clsx": "latest",
     "jspdf": "latest",
     "jspdf-autotable": "latest",
@@ -26,7 +21,6 @@
     "tailwind-merge": "latest"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.2.1",
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",

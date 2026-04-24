@@ -49,95 +49,110 @@ const NuevaEntrada = () => {
   };
 
   const handleAction = async (tipo) => {
+    // Validación de campos obligatorios
     if (!formData.placa || !formData.cliente) {
-      return alert("Por favor escribe al menos el nombre del Cliente y las Placas.");
+      return alert("Completa los campos obligatorios (Cliente y Placa) *");
     }
-    
+
     setIsSaving(true);
+
     try {
+      // 1. Generar el PDF
       const base64 = await generarPDFReporte(formData, photos);
-      const fileName = `Reporte_${formData.placa || 'Sin_Placa'}.pdf`;
+      const fileName = `Reporte_${formData.placa}_${new Date().getTime()}.pdf`;
 
-      // --- LÓGICA PARA NAVEGADOR (PC) ---
-      if (!window.Capacitor && !window.electronAPI) {
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        if (tipo === 'share') alert("En PC usa 'Descargar' para compartir el archivo manualmente.");
-      } 
-      // --- LÓGICA PARA ANDROID (CAPACITOR) ---
-      else if (window.Capacitor) {
-        // Importación dinámica para evitar errores si no está instalada la librería
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        const { Share } = await import('@capacitor/share');
-
-        const result = await Filesystem.writeFile({
-          path: fileName,
-          data: base64,
-          directory: Directory.Documents,
-        });
-
-        if (tipo === 'share') {
-          await Share.share({ title: 'Reporte Educar', files: [result.uri] });
-        } else {
-          alert("Guardado en Documentos");
-        }
+      // 2. Lógica de descarga universal para PC (Navegador / Electron)
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // 3. Feedback al usuario
+      if (tipo === 'share') {
+        alert("Archivo generado con éxito. En PC puedes compartir el archivo descargado por correo o WhatsApp Web.");
+      } else {
+        alert("Reporte descargado correctamente.");
+      }
+
     } catch (e) {
-      console.error(e);
-      alert('Error: ' + e.message);
+      console.error("Error al generar el PDF:", e);
+      alert('Error crítico al procesar el PDF. Revisa los datos e intenta de nuevo.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   return (
     <div className="min-h-screen pb-20 max-w-xl mx-auto px-4 text-slate-200">
       <div className="py-8 text-center">
-        <h1 className="text-3xl font-bold text-slate-100">EDU-CAR</h1>
-        <p className="text-indigo-400 text-xs uppercase tracking-widest">Sistema de Reportes</p>
+        <h1 className="text-3xl font-bold text-slate-100 tracking-tight">EDU-CAR</h1>
+        <p className="text-indigo-400 text-xs uppercase tracking-widest font-semibold mt-1">Sistema de Reportes</p>
       </div>
 
       <div className="space-y-6">
+        {/* Formulario de datos del vehículo */}
         <VehicleForm formData={formData} setFormData={setFormData} />
         
-        <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl">
-          <label className="text-indigo-300 text-xs font-bold uppercase block mb-2">📝 Observaciones</label>
+        {/* Sección de Observaciones Generales */}
+        <div className="bg-slate-900/50 border border-slate-700/50 p-5 rounded-3xl space-y-3">
+          <label className="text-indigo-300 text-xs font-bold uppercase tracking-widest ml-1 block">
+            📝 Observaciones Generales
+          </label>
           <textarea
             value={formData.comentarios}
             onChange={(e) => setFormData({...formData, comentarios: e.target.value})}
-            placeholder="Detalles adicionales..."
-            className="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-sm resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
-            rows="3"
+            placeholder="Anota detalles adicionales, estado visual del vehículo o peticiones del cliente..."
+            rows="4"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
           />
         </div>
 
+        {/* Formulario de Refacciones */}
         <RefaccionesForm formData={formData} setFormData={setFormData} />
-        <PhotoCapture photos={photos} onTakePhoto={handleAddPhoto} onUpdateDescription={handleUpdatePhotoDesc} onRemovePhoto={handleRemovePhoto} />
         
-        <button onClick={handleLimpiar} className="w-full bg-slate-800 text-slate-400 py-3 rounded-2xl text-xs font-bold uppercase border border-slate-700">
-          Limpiar Todo
+        {/* Captura de Fotos */}
+        <PhotoCapture 
+          photos={photos} 
+          onTakePhoto={handleAddPhoto} 
+          onUpdateDescription={handleUpdatePhotoDesc}
+          onRemovePhoto={handleRemovePhoto}
+        />
+        
+        {/* Botón de Limpieza */}
+        <button 
+          onClick={handleLimpiar} 
+          className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-2xl transition-colors text-xs font-bold uppercase tracking-widest border border-slate-700 mt-4"
+        >
+          🗑️ Limpiar Todo el Formulario
         </button>
 
+        {/* Acciones de PDF */}
         <div className="grid grid-cols-2 gap-4">
-          <button onClick={() => handleAction('download')} disabled={isSaving} className="bg-slate-700 py-4 rounded-2xl font-bold">
-            {isSaving ? '...' : '⬇️ Descargar'}
+          <button 
+            onClick={() => handleAction('download')} 
+            disabled={isSaving} 
+            className="bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-2xl transition-all font-bold disabled:opacity-50"
+          >
+            {isSaving ? 'Generando...' : '⬇️ Descargar'}
           </button>
-          <button onClick={() => handleAction('share')} disabled={isSaving} className="bg-indigo-600 py-4 rounded-2xl font-bold">
-            {isSaving ? '...' : '📤 Compartir'}
+          <button 
+            onClick={() => handleAction('share')} 
+            disabled={isSaving} 
+            className="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl transition-all font-bold disabled:opacity-50"
+          >
+            {isSaving ? 'Generando...' : '📤 Compartir'}
           </button>
         </div>
       </div>
